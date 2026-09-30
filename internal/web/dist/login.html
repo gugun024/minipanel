@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>minipanel — Login</title>
+<link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+<div class="login-wrap">
+  <form class="card login-card" id="loginForm" autocomplete="off">
+    <div class="logo">▦ minipanel</div>
+    <p class="muted">Masuk untuk mengelola server</p>
+    <label>Username
+      <input type="text" id="username" name="username" autofocus required>
+    </label>
+    <label>Password
+      <input type="password" id="password" name="password" required>
+    </label>
+    <div class="error" id="loginError" hidden></div>
+    <button type="submit" class="btn primary" id="loginBtn">Masuk</button>
+  </form>
+</div>
+<script>
+document.getElementById('loginForm').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const btn = document.getElementById('loginBtn');
+  const err = document.getElementById('loginError');
+  err.hidden = true;
+  btn.disabled = true;
+  btn.textContent = 'Memeriksa…';
+  try {
+    const res = await fetch('/api/login', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({
+        username: document.getElementById('username').value,
+        password: document.getElementById('password').value,
+      }),
+    });
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}));
+      throw new Error(data.error || 'Login gagal');
+    }
+    location.href = '/';
+  } catch (ex) {
+    err.textContent = ex.message;
+    err.hidden = false;
+    btn.disabled = false;
+    btn.textContent = 'Masuk';
+  }
+});
+</script>
+</body>
+</html>

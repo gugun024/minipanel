@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>minipanel</title>
+<link rel="stylesheet" href="/styles.css">
+<link rel="stylesheet" href="/xterm.css">
+</head>
+<body>
+<header class="topbar">
+  <div class="logo">▦ minipanel</div>
+  <nav class="tabs">
+    <button class="tab active" data-tab="dashboard">Dashboard</button>
+    <button class="tab" data-tab="services">Layanan</button>
+    <button class="tab" data-tab="files">File</button>
+    <button class="tab" data-tab="websites">Websites</button>
+    <button class="tab" data-tab="databases">Databases</button>
+    <button class="tab" data-tab="backups">Backups</button>
+    <button class="tab" data-tab="apps">Apps</button>
+    <button class="tab" data-tab="terminal">Terminal</button>
+  </nav>
+  <button class="btn ghost" id="logoutBtn">Keluar</button>
+</header>
+
+<main class="container">
+  <!-- DASHBOARD -->
+  <section id="tab-dashboard" class="tabpane active">
+    <div class="grid">
+      <div class="card">
+        <h3>CPU</h3>
+        <div class="big" id="cpuVal">–</div>
+        <div class="bar"><div class="fill" id="cpuBar"></div></div>
+      </div>
+      <div class="card">
+        <h3>RAM</h3>
+        <div class="big" id="ramVal">–</div>
+        <div class="bar"><div class="fill" id="ramBar"></div></div>
+        <div class="muted small" id="ramDetail"></div>
+      </div>
+      <div class="card">
+        <h3>Disk <span class="muted small" id="diskPath"></span></h3>
+        <div class="big" id="diskVal">–</div>
+        <div class="bar"><div class="fill" id="diskBar"></div></div>
+        <div class="muted small" id="diskDetail"></div>
+      </div>
+      <div class="card">
+        <h3>Uptime</h3>
+        <div class="big" id="uptimeVal">–</div>
+        <div class="muted small" id="loadVal"></div>
+      </div>
+    </div>
+    <p class="muted small">Diperbarui otomatis tiap 3 detik.</p>
+  </section>
+
+  <!-- SERVICES -->
+  <section id="tab-services" class="tabpane">
+    <div class="toolbar">
+      <button class="btn" id="svcRefresh">↻ Muat ulang</button>
+    </div>
+    <div class="error" id="svcError" hidden></div>
+    <div class="card list" id="svcList"><p class="muted">Memuat…</p></div>
+  </section>
+
+  <!-- FILES -->
+  <section id="tab-files" class="tabpane">
+    <div class="toolbar">
+      <span class="crumb" id="crumb"></span>
+    </div>
+    <div class="toolbar wrap">
+      <button class="btn" id="fileUp">⬆ Naik</button>
+      <button class="btn" id="fileNew">＋ File</button>
+      <button class="btn" id="fileMkdir">＋ Folder</button>
+      <button class="btn" id="fileUploadBtn">⇪ Upload</button>
+      <input type="file" id="fileUpload" hidden>
+      <button class="btn" id="fileRefresh">↻</button>
+    </div>
+    <div class="error" id="fileError" hidden></div>
+    <div class="card list" id="fileList"><p class="muted">Memuat…</p></div>
+  </section>
+
+  <!-- WEBSITES -->
+  <section id="tab-websites" class="tabpane">
+    <div class="toolbar wrap">
+      <input type="text" id="siteDomain" placeholder="domain.com" style="max-width:220px">
+      <select id="siteType" style="max-width:150px">
+        <option value="static">📁 Statis</option>
+        <option value="proxy">🔀 Proxy</option>
+      </select>
+      <input type="text" id="siteRoot" placeholder="document root (opsional)" style="max-width:280px">
+      <input type="number" id="sitePort" placeholder="port app (mis. 3000)" min="1" max="65535" style="max-width:150px" hidden>
+      <button class="btn primary" id="siteAdd">＋ Tambah</button>
+      <button class="btn" id="siteRefresh">↻</button>
+    </div>
+    <p class="muted small">Domain yang ditambahkan otomatis dilayani via HTTPS dengan sertifikat
+      Let's Encrypt (mode <b>staging</b> secara default — belum dipercaya browser; lihat README
+      untuk produksi). <b>Statis</b>: serve file dari document root (kosongkan untuk folder default).
+      <b>Proxy</b>: teruskan request ke aplikasi yang jalan di <span style="font-family:monospace">127.0.0.1:port</span>
+      — dipakai otomatis oleh tab <b>Apps</b>, atau manual untuk aplikasi sendiri.</p>
+    <div class="error" id="siteError" hidden></div>
+    <div class="card list" id="siteList"><p class="muted">Memuat…</p></div>
+  </section>
+
+  <!-- DATABASES -->
+  <section id="tab-databases" class="tabpane">
+    <div id="dbSetup" hidden>
+      <div class="card">
+        <h3>🗄️ Database belum dikonfigurasi</h3>
+        <p class="muted small">Isi kredensial admin MySQL/MariaDB lewat environment
+          lalu restart minipanel:</p>
+        <p class="small" style="font-family:monospace;background:#0d1117;padding:10px;border-radius:8px">MINIPANEL_DB_HOST=127.0.0.1
+MINIPANEL_DB_PORT=3306
+MINIPANEL_DB_USER=root
+MINIPANEL_DB_PASS=rahasia
+./minipanel</p>
+        <p class="muted small">User admin butuh hak <b>CREATE/DROP DATABASE</b> dan
+          <b>CREATE USER</b> (biasanya user root).</p>
+        <div class="error" id="dbSetupError" hidden></div>
+        <button class="btn" id="dbSetupRefresh">↻ Cek lagi</button>
+      </div>
+    </div>
+    <div id="dbMain" hidden>
+      <div class="toolbar wrap">
+        <input type="text" id="dbName" placeholder="nama_database" style="max-width:220px">
+        <button class="btn primary" id="dbAdd">＋ Database</button>
+        <button class="btn" id="dbRefresh">↻</button>
+        <span class="muted small" id="dbAddr"></span>
+      </div>
+      <div class="error" id="dbError" hidden></div>
+      <div class="card list" id="dbList"><p class="muted">Memuat…</p></div>
+
+      <h3 style="margin:18px 0 8px">Users</h3>
+      <div class="toolbar wrap">
+        <input type="text" id="dbUser" placeholder="user" style="max-width:160px">
+        <input type="text" id="dbUserHost" placeholder="host (default: localhost)" style="max-width:200px">
+        <input type="password" id="dbUserPass" placeholder="password" style="max-width:180px">
+        <input type="text" id="dbUserDb" placeholder="database" style="max-width:180px">
+        <button class="btn primary" id="dbUserAdd">＋ User</button>
+      </div>
+      <p class="muted small">User baru otomatis diberi <b>ALL PRIVILEGES</b> ke database
+        yang dipilih. Nama database/user hanya boleh huruf, angka, dan underscore.</p>
+      <div class="error" id="dbUserError" hidden></div>
+      <div class="card list" id="dbUserList"><p class="muted">Memuat…</p></div>
+    </div>
+  </section>
+  <!-- BACKUPS -->
+  <section id="tab-backups" class="tabpane">
+    <div class="toolbar wrap">
+      <button class="btn" id="bkRefresh">↻ Muat ulang</button>
+      <span class="muted small">Matikan toggle untuk menonaktifkan jadwal tanpa menghapus job.</span>
+    </div>
+    <div class="error" id="bkError" hidden></div>
+    <div class="card list" id="bkJobList"><p class="muted">Memuat…</p></div>
+
+    <h3 style="margin:18px 0 8px" id="bkFormTitle">Tambah job backup</h3>
+    <div class="card">
+      <label>Nama job
+        <input type="text" id="bkName" placeholder="mis. Backup toko harian">
+      </label>
+      <label>Tipe target
+        <select id="bkType">
+          <option value="website">Website saja</option>
+          <option value="database">Database saja</option>
+          <option value="both">Website + Database</option>
+        </select>
+      </label>
+      <label id="bkDomainWrap">Domain website
+        <input type="text" id="bkDomain" list="bkDomainList" placeholder="contoh.com">
+        <datalist id="bkDomainList"></datalist>
+      </label>
+      <label id="bkDbWrap" hidden>Nama database
+        <input type="text" id="bkDatabase" list="bkDbList" placeholder="nama_database">
+        <datalist id="bkDbList"></datalist>
+      </label>
+      <label>Jadwal
+        <select id="bkPreset">
+          <option value="0 2 * * *">Harian — 02:00</option>
+          <option value="0 2 * * 0">Mingguan — Minggu 02:00</option>
+          <option value="0 2 1 * *">Bulanan — tanggal 1, 02:00</option>
+          <option value="0 * * * *">Tiap jam</option>
+          <option value="custom">Custom (cron expression)…</option>
+        </select>
+      </label>
+      <label id="bkCronWrap" hidden>Cron expression — format: menit jam tanggal bulan hari (mis. <span style="font-family:monospace">*/30 * * * *</span>)
+        <input type="text" id="bkSchedule" placeholder="0 2 * * *">
+      </label>
+      <label>Retensi — jumlah backup terakhir per tipe yang disimpan (sisanya dihapus otomatis)
+        <input type="number" id="bkRetention" value="7" min="1" max="365">
+      </label>
+      <label style="display:flex;align-items:center;gap:8px;margin:12px 0">
+        <input type="checkbox" id="bkEnabled" checked style="width:auto"> Job aktif (jadwal berjalan)
+      </label>
+      <div class="error" id="bkFormError" hidden></div>
+      <div style="display:flex;gap:8px">
+        <button class="btn primary" id="bkSave">＋ Tambah job</button>
+        <button class="btn" id="bkCancelEdit" hidden>Batal edit</button>
+      </div>
+    </div>
+
+    <h3 style="margin:18px 0 8px">File backup <span class="muted small" id="bkFilesTitle"></span></h3>
+    <div class="error" id="bkFileError" hidden></div>
+    <div class="card list" id="bkFileList"><p class="muted">Pilih tombol 📂 pada job untuk melihat file backup-nya.</p></div>
+  </section>
+  <!-- APPS -->
+  <section id="tab-apps" class="tabpane">
+    <div id="appsNoDocker" hidden>
+      <div class="card">
+        <h3>🐳 Docker belum tersedia</h3>
+        <p class="muted small">Fitur one-click install butuh <b>Docker</b> di server.
+          Install Docker lalu restart minipanel:</p>
+        <p class="small" style="font-family:monospace;background:#0d1117;padding:10px;border-radius:8px">curl -fsSL https://get.docker.com | sh</p>
+        <p class="muted small">Panel tetap berjalan normal tanpa Docker — hanya tab ini yang nonaktif.</p>
+        <button class="btn" id="appsRetry">↻ Cek lagi</button>
+      </div>
+    </div>
+    <div id="appsMain" hidden>
+      <div class="toolbar wrap">
+        <button class="btn" id="appsRefresh">↻ Muat ulang</button>
+        <span class="muted small">Satu klik → container jalan → domain otomatis ter-proxy ke aplikasi.</span>
+      </div>
+      <div class="error" id="appsError" hidden></div>
+
+      <h3 style="margin:6px 0 8px">Katalog aplikasi</h3>
+      <div class="grid" id="appsCatalog"><p class="muted">Memuat…</p></div>
+
+      <div id="appsInstallCard" class="card" hidden style="margin-top:14px">
+        <h3 id="appsInstallTitle">Install</h3>
+        <div id="appsInstallForm"></div>
+        <div class="error" id="appsFormError" hidden></div>
+        <div style="display:flex;gap:8px;margin-top:10px">
+          <button class="btn primary" id="appsInstallBtn">🚀 Install</button>
+          <button class="btn" id="appsInstallCancel">Batal</button>
+        </div>
+        <p class="muted small">Install berjalan di background (pull image bisa memakan waktu).
+          Pantau statusnya di daftar instance di bawah.</p>
+      </div>
+
+      <h3 style="margin:18px 0 8px">Aplikasi ter-install</h3>
+      <div class="card list" id="appsInstances"><p class="muted">Memuat…</p></div>
+    </div>
+  </section>
+  <!-- TERMINAL -->
+  <section id="tab-terminal" class="tabpane">
+    <div class="toolbar wrap">
+      <button class="btn primary" id="termReconnect">↻ Sambung ulang</button>
+      <span class="muted small" id="termStatus">belum tersambung</span>
+    </div>
+    <p class="muted small">⚠️ Terminal ini adalah shell <b>penuh</b> dengan hak akses user
+      yang menjalankan minipanel. Hati-hati menjalankan perintah destruktif.</p>
+    <div id="termBox" class="terminal-box"></div>
+  </section>
+</main>
+
+<!-- Editor modal -->
+<div class="modal" id="editorModal" hidden>
+  <div class="modal-box">
+    <div class="modal-head">
+      <span id="editorTitle">Edit file</span>
+      <button class="btn ghost" id="editorClose">✕</button>
+    </div>
+    <textarea id="editorArea" spellcheck="false"></textarea>
+    <div class="error" id="editorError" hidden></div>
+    <div class="modal-foot">
+      <button class="btn primary" id="editorSave">Simpan</button>
+      <button class="btn" id="editorCancel">Batal</button>
+    </div>
+  </div>
+</div>
+
+<script src="/xterm.js"></script>
+<script src="/xterm-addon-fit.js"></script>
+<script src="/app.js"></script>
+</body>
+</html>

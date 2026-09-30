@@ -1,0 +1,14 @@
+# Binary hasil build (didistribusikan lewat GitHub Releases, bukan repo)
+/minipanel
+/minipanel-linux-*
+
+# Arsip
+*.tar.gz
+
+# Data lokal panel saat development
+.minipanel/
+data/
+
+# Lain-lain
+*.log
+.DS_Store
