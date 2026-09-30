@@ -47,25 +47,41 @@ func randomPassword() string {
 	return string(b)
 }
 
-// resolveFileRoot menentukan direktori root file manager:
-// MINIPANEL_ROOT, fallback ke /var/www, lalu home dir user.
-func resolveFileRoot() (string, error) {
-	candidates := []string{getenv("MINIPANEL_ROOT", "")}
-	if candidates[0] == "" {
-		candidates = append(candidates, "/var/www")
-		if home, err := os.UserHomeDir(); err == nil {
-			candidates = append(candidates, home)
+// resolveFileRoot menentukan direktori root file manager.
+//
+// Bila MINIPANEL_ROOT di-set eksplisit, direktori itu dipakai apa
+// adanya — perilaku lama tidak berubah (harus sudah ada dan berupa
+// direktori; tidak dibuatkan otomatis).
+//
+// Bila tidak di-set, kandidat dicoba berurutan: /var/www, lalu
+// direktori data panel (dataDir). Kandidat yang belum ada DIBUAT
+// otomatis dengan os.MkdirAll, supaya di server fresh (mis. jalan
+// via systemd tanpa /var/www dan tanpa $HOME) panel tetap bisa
+// start. Init hanya gagal bila SEMUA kandidat gagal; pesan error
+// menyebut semua kandidat yang dicoba beserta sebabnya.
+func resolveFileRoot(dataDir string) (string, error) {
+	if explicit := os.Getenv("MINIPANEL_ROOT"); explicit != "" {
+		fm, err := files.New(explicit)
+		if err != nil {
+			return "", fmt.Errorf("MINIPANEL_ROOT=%s tidak valid: %w", explicit, err)
 		}
+		return fm.Root(), nil
 	}
+	candidates := []string{"/var/www", dataDir}
+	var tried []string
 	for _, c := range candidates {
-		if c == "" {
+		if err := os.MkdirAll(c, 0o755); err != nil {
+			tried = append(tried, fmt.Sprintf("%s (%v)", c, err))
 			continue
 		}
-		if fm, err := files.New(c); err == nil {
-			return fm.Root(), nil
+		fm, err := files.New(c)
+		if err != nil {
+			tried = append(tried, fmt.Sprintf("%s (%v)", c, err))
+			continue
 		}
+		return fm.Root(), nil
 	}
-	return "", fmt.Errorf("tidak ada direktori root yang valid (coba set MINIPANEL_ROOT)")
+	return "", fmt.Errorf("tidak ada direktori root yang valid; dicoba: %s (coba set MINIPANEL_ROOT)", strings.Join(tried, ", "))
 }
 
 // resolveDataDir menentukan direktori data panel: MINIPANEL_DATA,
@@ -149,8 +165,15 @@ func main() {
 		log.Fatalf("gagal init auth: %v", err)
 	}
 
+	// --- Direktori data (dipakai juga sebagai fallback terakhir
+	// root file manager) ---
+	dataDir, err := resolveDataDir()
+	if err != nil {
+		log.Fatalf("gagal init direktori data: %v", err)
+	}
+
 	// --- File manager root ---
-	fileRoot, err := resolveFileRoot()
+	fileRoot, err := resolveFileRoot(dataDir)
 	if err != nil {
 		log.Fatalf("gagal init file manager: %v", err)
 	}
@@ -167,10 +190,6 @@ func main() {
 	svcMgr := services.New(svcNames)
 
 	// --- Websites + SSL otomatis ---
-	dataDir, err := resolveDataDir()
-	if err != nil {
-		log.Fatalf("gagal init direktori data: %v", err)
-	}
 	siteStore, err := sites.New(dataDir)
 	if err != nil {
 		log.Fatalf("gagal init websites: %v", err)

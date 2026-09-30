@@ -88,7 +88,7 @@ aman dan mencetaknya sekali di terminal saat startup — simpan password itu.
 | `MINIPANEL_USER` | `admin` | Username login |
 | `MINIPANEL_PASS` | *(acak, dicetak saat startup)* | Password login |
 | `MINIPANEL_ADDR` | `:8080` | Alamat listen, mis. `127.0.0.1:8080` |
-| `MINIPANEL_ROOT` | `/var/www` → fallback home dir | Direktori root file manager |
+| `MINIPANEL_ROOT` | `/var/www` → fallback direktori data (`MINIPANEL_DATA`); yang belum ada dibuat otomatis | Direktori root file manager |
 | `MINIPANEL_SERVICES` | `nginx,apache2,mysql,mariadb,php-fpm,redis-server,redis,docker,ssh,sshd,postgresql` | Daftar service (pisahkan koma) |
 | `MINIPANEL_DATA` | `~/.minipanel` | Direktori data panel (daftar website + cache sertifikat) |
 | `HTTP_PORT` | `80` | Port HTTP: serve ACME challenge + redirect ke HTTPS |

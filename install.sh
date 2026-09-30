@@ -20,6 +20,7 @@ PANEL_VERSION="latest"
 
 BIN_PATH="/usr/local/bin/minipanel"
 DATA_DIR="/var/lib/minipanel"
+WEB_ROOT="/var/www"
 CONF_DIR="/etc/minipanel"
 ENV_FILE="$CONF_DIR/minipanel.env"
 UNIT_FILE="/etc/systemd/system/minipanel.service"
@@ -116,10 +117,14 @@ command -v curl >/dev/null 2>&1 || die "curl tidak ditemukan. Install dulu: apt-
 # Jalankan ulang installer TIDAK menimpa kredensial yang sudah ada (idempotent).
 EXIST_USER=""
 EXIST_PASS=""
+EXIST_ROOT=""
 if [ -f "$ENV_FILE" ]; then
     EXIST_USER="$(grep -E '^MINIPANEL_USER=' "$ENV_FILE" | head -1 | cut -d= -f2- || true)"
     EXIST_PASS="$(grep -E '^MINIPANEL_PASS=' "$ENV_FILE" | head -1 | cut -d= -f2- || true)"
+    EXIST_ROOT="$(grep -E '^MINIPANEL_ROOT=' "$ENV_FILE" | head -1 | cut -d= -f2- || true)"
 fi
+# Root file manager: hormati nilai lama bila sudah ada, default /var/www.
+FILE_ROOT="${EXIST_ROOT:-$WEB_ROOT}"
 
 ADMIN_USER="${MP_ADMIN_USER:-${EXIST_USER:-admin}}"
 ADMIN_PASS="${MP_ADMIN_PASS:-$EXIST_PASS}"
@@ -185,15 +190,17 @@ fi
 
 # ---------------------------------------------------------------- direktori + env
 run install -d -m 0755 "$DATA_DIR"
+run install -d -m 0755 "$WEB_ROOT"
 run install -d -m 0755 "$CONF_DIR"
 if [ "$DRY_RUN" -eq 1 ]; then
-    echo "[dry-run] tulis $ENV_FILE (chmod 600): MINIPANEL_USER=$ADMIN_USER, MINIPANEL_PASS=***, MINIPANEL_DATA=$DATA_DIR"
+    echo "[dry-run] tulis $ENV_FILE (chmod 600): MINIPANEL_USER=$ADMIN_USER, MINIPANEL_PASS=***, MINIPANEL_DATA=$DATA_DIR, MINIPANEL_ROOT=$FILE_ROOT"
 else
     umask 077
     cat > "$ENV_FILE" <<EOF
 MINIPANEL_USER=$ADMIN_USER
 MINIPANEL_PASS=$ADMIN_PASS
 MINIPANEL_DATA=$DATA_DIR
+MINIPANEL_ROOT=$FILE_ROOT
 EOF
     chmod 600 "$ENV_FILE"
     info "Konfigurasi ditulis ke $ENV_FILE (chmod 600)"
