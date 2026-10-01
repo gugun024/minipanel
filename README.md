@@ -58,6 +58,40 @@ Env installer: `MP_ADMIN_USER` (default `admin`), `MP_ADMIN_PASS`,
 > Perlakukan kredensial panel setara kredensial admin server, dan lihat
 > catatan keamanan di bawah soal halaman admin yang belum ber-HTTPS.
 
+## Uninstall
+
+Copot minipanel dari server:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/gugun024/minipanel/main/install.sh | \
+  sudo bash -s -- --uninstall
+```
+
+Kalau file `install.sh` masih ada di server, cukup
+`sudo bash install.sh --uninstall`. Yang dilakukan perintah di atas:
+
+1. Stop service `minipanel` dan nonaktifkan dari auto-start
+   (`systemctl disable --now minipanel`).
+2. Hapus unit systemd `/etc/systemd/system/minipanel.service` dan binary
+   `/usr/local/bin/minipanel`, lalu `systemctl daemon-reload`.
+
+Data panel (`/var/lib/minipanel`) dan konfigurasi + kredensial
+(`/etc/minipanel`) **dipertahankan** — install ulang nanti memakai data
+yang sama. Untuk menghapus semuanya sekalian (bersih total):
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/gugun024/minipanel/main/install.sh | \
+  sudo bash -s -- --uninstall --purge
+```
+
+Yang **tidak pernah** disentuh uninstaller, dengan atau tanpa `--purge`:
+
+- File website di `/var/www` (document root website-website kamu).
+- Docker dan MariaDB yang kemarin dipasang lewat opsi installer — itu
+  paket sistem yang berdiri sendiri; copot dengan `apt` bila sudah tidak
+  dipakai.
+- Database dan user MySQL/MariaDB yang dibuat lewat panel.
+
 ## Cara build
 
 Butuh Go 1.24+ (cukup sekali, di mesin build saja):
